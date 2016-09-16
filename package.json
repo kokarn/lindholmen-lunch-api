@@ -1,0 +1,32 @@
+{
+  "name": "matminnen-api",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "pretest": "eslint server.js",
+    "test": "echo \"No test specified\" && exit 0"
+  },
+  "engines": {
+    "node": "^6.5.0"
+  },
+  "author": "Kokarn",
+  "license": "MIT",
+  "dependencies": {
+    "cheerio": "^0.22.0",
+    "express": "^4.14.0",
+    "request": "^2.74.0"
+  },
+  "devDependencies": {
+    "eslint": "^3.5.0",
+    "eslint-config-kokarn": "^1.0.0"
+  },
+  "eslintConfig": {
+    "extends": "kokarn/node",
+    "rules": {
+      "no-process-env": [
+        "off"
+      ]
+    }
+  }
+}
