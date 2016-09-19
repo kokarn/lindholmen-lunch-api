@@ -100,7 +100,7 @@ app.get( '/', ( webRequest, response ) => {
     response.send( dishes );
 } );
 
-app.get( '/slack', ( webRequest, response ) => {
+app.all( '/slack', ( webRequest, response ) => {
     let restaurant = false;
     const responseData = {
         attachments: [],
