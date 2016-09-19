@@ -10,8 +10,10 @@ const TYPE_IMAGE_URLS = {
     Fisk: 'http://i.imgur.com/V0hxUyR.png',
     Kyckling: 'http://i.imgur.com/spExnvs.png',
     Kött: 'http://i.imgur.com/f4qJ0xe.png',
+    Pasta: 'http://i.imgur.com/3NuKHcx.png',
     Sallad: 'http://i.imgur.com/nLKqIPD.png',
     Vegetariskt: 'http://i.imgur.com/nLKqIPD.png',
+    Övrigt: 'http://i.imgur.com/lKpL4gp.png',
 };
 
 const app = express();
