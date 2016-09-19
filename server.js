@@ -96,29 +96,12 @@ const loadDishes = function loadDishes () {
     } );
 };
 
-app.get( '/', ( webRequest, response ) => {
-    response.send( dishes );
-} );
-
-app.all( '/slack', ( webRequest, response ) => {
-    let restaurant = false;
+const getSlackMessageForRestaurant = function getSlackMessageForRestaurant ( restaurantName ){
     const responseData = {
         attachments: [],
     };
 
-    if ( !webRequest.query.restaurant ) {
-        response.sendStatus( INVALID_REQUEST_RESPONSE_CODE );
-
-        return false;
-    }
-
-    if ( typeof dishes[ webRequest.query.restaurant ] === 'undefined' ) {
-        response.sendStatus( INVALID_REQUEST_RESPONSE_CODE );
-
-        return false;
-    }
-
-    restaurant = dishes[ webRequest.query.restaurant ];
+    restaurant = dishes[ restaurantName ];
 
     responseData.text = `Dagens lunch på <${ restaurant.link }|${ restaurant.title }>`;
 
@@ -131,7 +114,39 @@ app.all( '/slack', ( webRequest, response ) => {
         } );
     }
 
-    response.send( responseData );
+    return responseData;
+}
+
+app.get( '/', ( webRequest, response ) => {
+    response.send( dishes );
+} );
+
+app.all( '/slack', ( webRequest, response ) => {
+    let restaurant = false;
+
+    if ( !webRequest.query.restaurant ) {
+        response.sendStatus( INVALID_REQUEST_RESPONSE_CODE );
+
+        return false;
+    }
+
+    if ( typeof dishes[ webRequest.query.restaurant ] === 'undefined' ) {
+        const restaurantsList = [];
+
+        // eslint-disable-next-line guard-for-in
+        for ( const identifier in dishes ) {
+            restaurantsList.push( identifier );
+        }
+
+
+        response.send( {
+            text: `Couldn't find any restaraunt with that name. These are currently available: ${ restaurantsList.join( ', ' ) }`,
+        } );
+
+        return true;
+    }
+
+    response.send( getSlackMessageForRestaurant( webRequest.query.restaurant ) );
 
     return true;
 } );
