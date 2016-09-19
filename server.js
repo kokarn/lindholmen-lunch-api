@@ -3,6 +3,7 @@ const cheerio = require( 'cheerio' );
 const express = require( 'express' );
 
 const DEFAULT_PORT = 4321;
+const INVALID_REQUEST_RESPONSE_CODE = 400;
 
 // Load every hour
 const LOAD_DISHES_INTERVAL = 3600000;
@@ -47,16 +48,48 @@ const parseRow = function parseRow ( $row ) {
     return outputData;
 };
 
+const nameToIdentifier = function nameToIdentifier ( name ) {
+    return name
+        .toLowerCase()
+        .replace( /['`]/gim, '' )
+        .replace( /\s/gim, '-' );
+};
+
 const loadDishes = function loadDishes () {
-    request( 'http://www.lindholmen.se/en/restaurants/matminnen', ( error, response, body ) => {
+    request( 'http://www.lindholmen.se/pa-omradet/dagens-lunch', ( error, response, body ) => {
         const $ = cheerio.load( body, {
             decodeEntities: false,
         } );
+        const currentDishes = {};
+        let currentRestaurantName = false;
+        let currentRestaurantLink = false;
 
-        const currentDishes = [];
+        $( '.table-list__row' ).each( ( index, element ) => {
+            const $currentElement = $( element );
 
-        $( '.view-dagens-lunch .table-list__row' ).each( ( index, element ) => {
-            currentDishes.push( parseRow( $( element ) ) );
+            if ( $currentElement.prev().hasClass( 'title' ) ) {
+                const $title = $currentElement.prev();
+
+                currentRestaurantName = $title.text();
+                currentRestaurantLink = `http://www.lindholmen.se${ $title.find( 'a' ).attr( 'href' ) }`;
+
+                if ( currentRestaurantName.indexOf( '(' ) > -1 ) {
+                    currentRestaurantName = currentRestaurantName.substr( 0, currentRestaurantName.indexOf( '(' ) );
+                }
+
+                // Special case for '
+                currentRestaurantName = currentRestaurantName.replace( /&#039;/gim, "'" );
+
+                currentRestaurantName = currentRestaurantName.trim();
+
+                currentDishes[ nameToIdentifier( currentRestaurantName ) ] = {
+                    dishes: [],
+                    link: currentRestaurantLink,
+                    title: currentRestaurantName,
+                };
+            }
+
+            currentDishes[ nameToIdentifier( currentRestaurantName ) ].dishes.push( parseRow( $( element ) ) );
         } );
 
         dishes = currentDishes;
@@ -68,20 +101,39 @@ app.get( '/', ( webRequest, response ) => {
 } );
 
 app.get( '/slack', ( webRequest, response ) => {
+    let restaurant = false;
     const responseData = {
         attachments: [],
     };
 
-    for ( let i = 0; i < dishes.length; i = i + 1 ) {
+    if ( !webRequest.query.restaurant ) {
+        response.sendStatus( INVALID_REQUEST_RESPONSE_CODE );
+
+        return false;
+    }
+
+    if ( typeof dishes[ webRequest.query.restaurant ] === 'undefined' ) {
+        response.sendStatus( INVALID_REQUEST_RESPONSE_CODE );
+
+        return false;
+    }
+
+    restaurant = dishes[ webRequest.query.restaurant ];
+
+    responseData.text = `Dagens lunch på <${ restaurant.link }|${ restaurant.title }>`;
+
+    for ( let i = 0; i < restaurant.dishes.length; i = i + 1 ) {
         responseData.attachments.push( {
-            footer: dishes[ i ].type,
-            footer_icon: TYPE_IMAGE_URLS[ dishes[ i ].type ], // eslint-disable-line camelcase
-            text: dishes[ i ].description,
-            title: dishes[ i ].title,
+            footer: restaurant.dishes[ i ].type,
+            footer_icon: TYPE_IMAGE_URLS[ restaurant.dishes[ i ].type ], // eslint-disable-line camelcase
+            text: restaurant.dishes[ i ].description,
+            title: restaurant.dishes[ i ].title,
         } );
     }
 
     response.send( responseData );
+
+    return true;
 } );
 
 loadDishes();
