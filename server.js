@@ -105,7 +105,7 @@ const loadDishes = function loadDishes () {
     } );
 };
 
-const getSlackMessageForRestaurant = function getSlackMessageForRestaurant ( restaurantName ){
+const getSlackMessageForRestaurant = function getSlackMessageForRestaurant ( restaurantName ) {
     const responseData = {
         attachments: [],
     };
@@ -124,7 +124,7 @@ const getSlackMessageForRestaurant = function getSlackMessageForRestaurant ( res
     }
 
     return responseData;
-}
+};
 
 app.get( '/', ( webRequest, response ) => {
     response.send( dishes );
