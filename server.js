@@ -110,7 +110,7 @@ const getSlackMessageForRestaurant = function getSlackMessageForRestaurant ( res
         attachments: [],
     };
 
-    restaurant = dishes[ restaurantName ];
+    const restaurant = dishes[ restaurantName ];
 
     responseData.text = `Dagens lunch på <${ restaurant.link }|${ restaurant.title }>`;
 
