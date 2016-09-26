@@ -1,6 +1,7 @@
 const request = require( 'request' );
 const cheerio = require( 'cheerio' );
 const express = require( 'express' );
+const bodyParser = require( 'body-parser' );
 
 const DEFAULT_PORT = 4321;
 const INVALID_REQUEST_RESPONSE_CODE = 400;
@@ -18,6 +19,14 @@ const TYPE_IMAGE_URLS = {
 };
 
 const app = express();
+
+// parse application/x-www-form-urlencoded
+app.use( bodyParser.urlencoded( {
+    extended: false,
+} ) );
+
+// parse application/json
+app.use( bodyParser.json() );
 
 let dishes = {};
 
@@ -124,13 +133,23 @@ app.get( '/', ( webRequest, response ) => {
 app.all( '/slack', ( webRequest, response ) => {
     let restaurant = false;
 
-    if ( !webRequest.query.restaurant ) {
+    if ( webRequest.query.restaurant ) {
+        restaurant = webRequest.query.restaurant;
+    }
+
+    if ( !restaurant && webRequest.body && webRequest.body.text ) {
+        const parsedText = webRequest.body.text.replace( webRequest.body.trigger_word, '' );
+
+        restaurant = parsedText.trim();
+    }
+
+    if ( !restaurant ) {
         response.sendStatus( INVALID_REQUEST_RESPONSE_CODE );
 
         return false;
     }
 
-    if ( typeof dishes[ webRequest.query.restaurant ] === 'undefined' ) {
+    if ( typeof dishes[ restaurant ] === 'undefined' ) {
         const restaurantsList = [];
 
         // eslint-disable-next-line guard-for-in
@@ -140,13 +159,13 @@ app.all( '/slack', ( webRequest, response ) => {
 
 
         response.send( {
-            text: `Couldn't find any restaraunt with that name. These are currently available: ${ restaurantsList.join( ', ' ) }`,
+            text: `Couldn't find any restaurant with that name. These are currently available: ${ restaurantsList.join( ', ' ) }`,
         } );
 
         return true;
     }
 
-    response.send( getSlackMessageForRestaurant( webRequest.query.restaurant ) );
+    response.send( getSlackMessageForRestaurant( restaurant ) );
 
     return true;
 } );
