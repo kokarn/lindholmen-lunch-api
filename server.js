@@ -148,9 +148,10 @@ const loadRestaurants = function loadRestaurants ( webRequest, response, next ) 
                 console.log( loadError );
             } );
     } else {
-        // eslint-disable-next-line callback-return
-        next();
+        return next();
     }
+
+    return true;
 };
 
 app.get( '/', loadRestaurants, ( webRequest, response ) => {
