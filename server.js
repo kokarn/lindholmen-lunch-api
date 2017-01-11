@@ -65,43 +65,55 @@ const nameToIdentifier = function nameToIdentifier ( name ) {
 };
 
 const loadDishes = function loadDishes () {
-    request( 'http://www.lindholmen.se/pa-omradet/dagens-lunch', ( error, response, body ) => {
-        const $ = cheerio.load( body, {
-            decodeEntities: false,
-        } );
-        const currentDishes = {};
-        let currentRestaurantName = false;
-        let currentRestaurantLink = false;
+    return new Promise( ( resolve, reject ) => {
+        request( 'http://www.lindholmen.se/pa-omradet/dagens-lunch', ( error, response, body ) => {
+            if ( error ) {
+                reject( error );
 
-        $( '.table-list__row' ).each( ( index, element ) => {
-            const $currentElement = $( element );
-
-            if ( $currentElement.prev().hasClass( 'title' ) ) {
-                const $title = $currentElement.prev();
-
-                currentRestaurantName = $title.text();
-                currentRestaurantLink = `http://www.lindholmen.se${ $title.find( 'a' ).attr( 'href' ) }`;
-
-                if ( currentRestaurantName.indexOf( '(' ) > -1 ) {
-                    currentRestaurantName = currentRestaurantName.substr( 0, currentRestaurantName.indexOf( '(' ) );
-                }
-
-                // Special case for '
-                currentRestaurantName = currentRestaurantName.replace( /&#039;/gim, "'" );
-
-                currentRestaurantName = currentRestaurantName.trim();
-
-                currentDishes[ nameToIdentifier( currentRestaurantName ) ] = {
-                    dishes: [],
-                    link: currentRestaurantLink,
-                    title: currentRestaurantName,
-                };
+                return false;
             }
 
-            currentDishes[ nameToIdentifier( currentRestaurantName ) ].dishes.push( parseRow( $( element ) ) );
-        } );
+            const $ = cheerio.load( body, {
+                decodeEntities: false,
+            } );
+            const currentDishes = {};
+            let currentRestaurantName = false;
+            let currentRestaurantLink = false;
 
-        dishes = currentDishes;
+            $( '.table-list__row' ).each( ( index, element ) => {
+                const $currentElement = $( element );
+
+                if ( $currentElement.prev().hasClass( 'title' ) ) {
+                    const $title = $currentElement.prev();
+
+                    currentRestaurantName = $title.text();
+                    currentRestaurantLink = `http://www.lindholmen.se${ $title.find( 'a' ).attr( 'href' ) }`;
+
+                    if ( currentRestaurantName.indexOf( '(' ) > -1 ) {
+                        currentRestaurantName = currentRestaurantName.substr( 0, currentRestaurantName.indexOf( '(' ) );
+                    }
+
+                    // Special case for '
+                    currentRestaurantName = currentRestaurantName.replace( /&#039;/gim, "'" );
+
+                    currentRestaurantName = currentRestaurantName.trim();
+
+                    currentDishes[ nameToIdentifier( currentRestaurantName ) ] = {
+                        dishes: [],
+                        link: currentRestaurantLink,
+                        title: currentRestaurantName,
+                    };
+                }
+
+                currentDishes[ nameToIdentifier( currentRestaurantName ) ].dishes.push( parseRow( $( element ) ) );
+            } );
+
+            dishes = currentDishes;
+
+            resolve();
+
+            return true;
+        } );
     } );
 };
 
@@ -126,11 +138,26 @@ const getSlackMessageForRestaurant = function getSlackMessageForRestaurant ( res
     return responseData;
 };
 
-app.get( '/', ( webRequest, response ) => {
+const loadRestaurants = function loadRestaurants ( webRequest, response, next ) {
+    if ( Object.keys( dishes ).length <= 0 ) {
+        loadDishes()
+            .then( () => {
+                next();
+            } )
+            .catch( ( loadError ) => {
+                console.log( loadError );
+            } );
+    } else {
+        // eslint-disable-next-line callback-return
+        next();
+    }
+};
+
+app.get( '/', loadRestaurants, ( webRequest, response ) => {
     response.send( dishes );
 } );
 
-app.all( '/slack', ( webRequest, response ) => {
+app.all( '/slack', loadRestaurants, ( webRequest, response ) => {
     let restaurant = false;
 
     if ( webRequest.query.restaurant ) {
