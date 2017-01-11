@@ -27,6 +27,9 @@
     "rules": {
       "no-process-env": [
         "off"
+      ],
+      "prefer-destructuring": [
+        "off"
       ]
     }
   }
