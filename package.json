@@ -4,7 +4,6 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "pretest": "eslint server.js",
     "test": "echo \"No test specified\" && exit 0"
   },
   "engines": {
