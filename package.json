@@ -17,20 +17,5 @@
     "cheerio": "^0.22.0",
     "express": "^4.14.0",
     "request": "^2.74.0"
-  },
-  "devDependencies": {
-    "eslint": "^3.5.0",
-    "eslint-config-kokarn": "^1.0.0"
-  },
-  "eslintConfig": {
-    "extends": "kokarn/node",
-    "rules": {
-      "no-process-env": [
-        "off"
-      ],
-      "prefer-destructuring": [
-        "off"
-      ]
-    }
   }
 }
