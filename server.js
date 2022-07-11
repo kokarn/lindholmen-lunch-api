@@ -66,7 +66,7 @@ const nameToIdentifier = function nameToIdentifier ( name ) {
 
 const loadDishes = function loadDishes () {
     return new Promise( ( resolve, reject ) => {
-        request( 'http://www.lindholmen.se/pa-omradet/dagens-lunch', ( error, response, body ) => {
+        request( 'https://lindholmen.uit.se/omradet/dagens-lunch?embed-mode=iframe', ( error, response, body ) => {
             if ( error ) {
                 reject( error );
 
